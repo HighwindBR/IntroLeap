@@ -7,6 +7,24 @@ extending the project.
 
 It complements the user-facing [`README.md`](README.md).
 
+## Contents
+
+- [Project scope](#project-scope)
+- [Development provenance](#development-provenance)
+- [Architecture](#architecture)
+- [Disney+ implementation](#disney-implementation)
+- [Disney+ dependencies](#what-disney-support-depends-on)
+- [Possible detector improvements](#possible-improvements-to-the-disney-detector)
+- [Configuration granularity](#configuration-granularity)
+- [Application versions and rendering](#application-versions-and-rendering-implementations)
+- [Investigation methodology](#investigation-methodology)
+- [Other services investigated](#other-services-investigated)
+- [Rejected approaches](#approaches-intentionally-rejected)
+- [Adding another service](#adding-another-streaming-service)
+- [Release automation and signing](#release-automation-and-signing)
+- [Validation checklist](#validation-checklist)
+- [Current assessment](#current-assessment)
+
 ## Project scope
 
 IntroLeap is deliberately limited to interactions that can be implemented through
@@ -22,6 +40,20 @@ The project does not currently use:
 - Network services, analytics, or telemetry
 
 Disney+ is currently the only supported streaming application.
+
+## Development provenance
+
+IntroLeap was researched and developed with substantial assistance from OpenAI
+Codex. This assistance included code generation and review, accessibility
+analysis, build troubleshooting, documentation, and evaluation of alternative
+implementation strategies.
+
+The maintainer defined the requirements, made product and scope decisions,
+performed tests on physical Android TV devices, collected ADB diagnostics,
+validated playback behavior, and reviewed the resulting changes.
+
+Codex is a development tool only. No OpenAI model, SDK, API, account, or runtime
+service is included in IntroLeap.
 
 ## Architecture
 
@@ -39,13 +71,17 @@ Settings are stored in the private `SharedPreferences` file
 
 ```text
 disney_enabled
-disney_intro
 show_skip_toast
 ```
 
-Disney+ automation is disabled by default. The intro option defaults to enabled
-but has no effect until Disney+ itself is enabled. The Compose activity does not
-participate in playback detection.
+Disney+ integration defaults to enabled on a fresh installation. This does not
+enable the Android accessibility service: the user must still grant that access
+explicitly in the system settings.
+
+If Disney+ is not installed or is disabled at the system level, the preference
+has no runtime effect. A stored user choice to disable Disney+ is preserved across
+restarts and future updates. The Compose activity does not participate in
+playback detection.
 
 ### Accessibility service
 
@@ -62,6 +98,18 @@ com.disney.disneyplus
 
 This double restriction reduces unnecessary events and prevents rules intended
 for Disney+ from being applied to another application.
+
+### Project structure
+
+- `MainActivity.kt`: Compose for TV configuration interface
+- `SkipService.java`: accessibility event processing and skip activation
+- `accessibility_service.xml`: accessibility scope and event configuration
+- `values/strings.xml`: default English strings
+- `values-pt/strings.xml`: Portuguese localization
+- `brand/`: original IntroLeap visual assets
+
+Keeping the interface and accessibility logic separate makes it possible to
+change the settings screen without altering playback behavior.
 
 ## Disney+ implementation
 
@@ -109,12 +157,12 @@ available for diagnostics and possible complementary matching in the future.
 ### Event-driven, source-first detection
 
 IntroLeap does not continuously poll the screen. Every search starts in response
-to an accessibility event from a supported package enabled by the user.
+to an accessibility event from a supported package enabled in IntroLeap.
 
 The processing order is:
 
 1. Read and validate the event package.
-2. Confirm that the user enabled that application.
+2. Confirm that integration for that application is enabled.
 3. Search the subtree rooted at `event.getSource()`.
 4. If necessary, search `getRootInActiveWindow()` as a fallback.
 5. Classify visible nodes.
@@ -238,6 +286,44 @@ should remain disabled in releases and should never be transmitted automatically
 Developers should also respect the lifecycle of `AccessibilityNodeInfo`: do not
 retain nodes beyond event processing, and avoid large or long-lived collections.
 
+## Configuration granularity
+
+The current interface intentionally exposes only one Disney+ switch. Disney+ is
+the only supported application and intro skipping is its only supported action,
+so a separate child switch would represent the same effective state.
+
+If a fork adds multiple applications or multiple actions per application, the
+recommended model is:
+
+1. An application-level switch controlling whether events from that package are
+   processed.
+2. Individual action switches only when the application supports more than one
+   independently useful action.
+3. Clear visual grouping of actions under their application.
+4. Preferences scoped by both application and action.
+5. Migration logic whenever an update changes the meaning of an existing
+   preference.
+
+For example:
+
+```text
+Prime Video                                      Enabled
+├── Auto skip intros                             Enabled
+├── Skip skippable ads                           Enabled
+├── Auto skip recaps                             Disabled
+└── Auto skip trailers                           Disabled
+```
+
+New applications should normally be disabled by default. When an application is
+enabled for the first time, narrow and predictable actions such as intro skipping
+may be enabled automatically. More subjective actions, including recaps,
+trailers, credits, and next-episode transitions, should require explicit opt-in.
+
+If an application supports only one action, prefer a single descriptive
+application switch instead of two controls producing the same effective state.
+New action categories must not be silently enabled for existing users during an
+update.
+
 ## Application versions and rendering implementations
 
 The results below apply to the versions that were actually tested. Streaming
@@ -285,7 +371,9 @@ unlikely to activate it reliably. Its absence does not prove that every possible
 technique is impossible; it is evidence that IntroLeap's straightforward approach
 is unavailable.
 
-## HBO Max
+## Other services investigated
+
+### HBO Max
 
 Tested package and version:
 
@@ -317,7 +405,7 @@ HBO Max support was therefore removed. A future integration would likely require
 application-specific reverse engineering, an internal player command, or visual
 analysis rather than Disney+'s node-based method.
 
-## Globoplay
+### Globoplay
 
 Tested package:
 
@@ -333,7 +421,7 @@ timed capture was not obtained.
 Globoplay is therefore unverified, not proven incompatible. Support should wait
 for a reproducible title and playback state.
 
-## Prime Video
+### Prime Video
 
 Tested package and reported versions:
 
@@ -356,7 +444,7 @@ The service could not reliably distinguish intro from recap, countdown from an
 enabled skip-ad action, or visible player text from unrelated nodes. Prime Video
 was placed on standby and later removed.
 
-## Netflix
+### Netflix
 
 Tested package and reported versions:
 
@@ -382,7 +470,7 @@ Clicking the entire surface would not identify the intended control and could
 interfere with player navigation. Netflix cannot currently use IntroLeap's
 straightforward node-based method.
 
-## YouTube for Android TV
+### YouTube for Android TV
 
 Tested package and versions:
 
@@ -420,7 +508,7 @@ states, particularly a reproducible and distinct `Next ad` node. YouTube was not
 included. It remains more promising than a player exposed only as one custom
 surface, but needs new captures for the active version before implementation.
 
-## Apple TV
+### Apple TV
 
 Tested or inspected package:
 
@@ -496,12 +584,37 @@ Inspect `package`, `class`, `text`, `content-desc`, `resource-id`, `clickable`,
 then specific labels, hierarchy, state, a safe clickable relative, and finally a
 bounded fallback traversal.
 
+## Release automation and signing
+
+GitHub Actions runs a debug build for every push and pull request. The release
+workflow reads `versionName` from `app/build.gradle.kts` and derives the
+corresponding `v*` tag. If that release already exists, the workflow stops without
+publishing a duplicate.
+
+For a new version, the workflow:
+
+1. Configures JDK 17 and Gradle.
+2. Builds `:app:assembleRelease`.
+3. Signs the APK with the stable CI keystore stored in the repository.
+4. Generates a SHA-256 checksum.
+5. Creates the version tag and GitHub release through `GITHUB_TOKEN`.
+6. Publishes the APK and checksum as release assets.
+
+The signing key is intentionally public and provides update compatibility rather
+than exclusive proof of authorship. Anyone with access to the repository can use
+the same key, so release origin must be established through the official GitHub
+repository and published checksum, not through the APK signature alone.
+
 ## Validation checklist
 
 Before merging another integration, verify that:
 
-- The application is disabled by default.
-- Enabling it does not enable unrelated actions.
+- The default state is intentional and documented.
+- Applications with several or potentially surprising actions are disabled by
+  default.
+- Applications with only one narrow action do not expose redundant controls.
+- Newly introduced action categories are not silently enabled for existing users.
+- Enabling an application does not enable unrelated actions.
 - Events from other packages are ignored.
 - Hidden and disabled nodes are rejected.
 - Generic `Skip` and `Next` controls cannot match.

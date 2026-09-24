@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.highwindbr.introleap"
         minSdk = 23
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.0.0"
+        versionCode = 8
+        versionName = "1.0.1"
     }
 
     buildFeatures {

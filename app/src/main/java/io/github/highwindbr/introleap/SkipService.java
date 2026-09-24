@@ -15,7 +15,6 @@ import java.util.Map;
 public final class SkipService extends AccessibilityService {
     public static final String PREFS = "introleap_settings";
     public static final String PREF_DISNEY = "disney_enabled";
-    public static final String PREF_DISNEY_INTRO = "disney_intro";
     public static final String PREF_SHOW_TOAST = "show_skip_toast";
 
     public static final String DISNEY_PACKAGE = "com.disney.disneyplus";
@@ -45,7 +44,7 @@ public final class SkipService extends AccessibilityService {
 
     private boolean isAppEnabled(String packageName) {
         SharedPreferences p = preferences();
-        return DISNEY_PACKAGE.equals(packageName) && p.getBoolean(PREF_DISNEY, false);
+        return DISNEY_PACKAGE.equals(packageName) && p.getBoolean(PREF_DISNEY, true);
     }
 
     private boolean findAndClick(AccessibilityNodeInfo start, String packageName, int limit) {
@@ -70,7 +69,7 @@ public final class SkipService extends AccessibilityService {
         String label = normalize(value(node.getText()) + " " + value(node.getContentDescription()));
 
         if (DISNEY_PACKAGE.equals(packageName)) {
-            if (enabled(PREF_DISNEY_INTRO) && isIntro(label)) return new Match(node, "intro");
+            if (isIntro(label)) return new Match(node, "intro");
             return null;
         }
         return null;
@@ -122,10 +121,6 @@ public final class SkipService extends AccessibilityService {
     private SharedPreferences preferences() {
         if (prefs == null) prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         return prefs;
-    }
-
-    private boolean enabled(String key) {
-        return preferences().getBoolean(key, true);
     }
 
     private static boolean isIntro(String s) {

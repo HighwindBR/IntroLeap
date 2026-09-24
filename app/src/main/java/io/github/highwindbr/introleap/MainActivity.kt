@@ -43,6 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
+import androidx.tv.material3.ClickableSurfaceDefaults
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Switch
@@ -137,10 +139,7 @@ private fun IntroLeapScreen(
     openAccessibilitySettings: () -> Unit,
 ) {
     var disneyEnabled by remember {
-        mutableStateOf(preferences.getBoolean(SkipService.PREF_DISNEY, false))
-    }
-    var skipIntros by remember {
-        mutableStateOf(preferences.getBoolean(SkipService.PREF_DISNEY_INTRO, true))
+        mutableStateOf(preferences.getBoolean(SkipService.PREF_DISNEY, true))
     }
     var showConfirmation by remember {
         mutableStateOf(preferences.getBoolean(SkipService.PREF_SHOW_TOAST, false))
@@ -179,20 +178,15 @@ private fun IntroLeapScreen(
                 )
             }
             item {
-                SectionTitle(stringResource(R.string.apps_and_skip_types))
+                SectionTitle(stringResource(R.string.supported_apps))
             }
             item {
                 DisneyCard(
                     available = disneyAvailable,
                     appEnabled = disneyEnabled,
-                    skipIntros = skipIntros,
                     onAppEnabledChange = {
                         disneyEnabled = it
                         preferences.edit().putBoolean(SkipService.PREF_DISNEY, it).apply()
-                    },
-                    onSkipIntrosChange = {
-                        skipIntros = it
-                        preferences.edit().putBoolean(SkipService.PREF_DISNEY_INTRO, it).apply()
                     },
                 )
             }
@@ -291,37 +285,18 @@ private fun ServiceCard(
 private fun DisneyCard(
     available: Boolean,
     appEnabled: Boolean,
-    skipIntros: Boolean,
     onAppEnabledChange: (Boolean) -> Unit,
-    onSkipIntrosChange: (Boolean) -> Unit,
 ) {
     SettingsCard(modifier = Modifier.alpha(if (available) 1f else 0.46f)) {
         TvToggleRow(
             title = "Disney+",
             description = stringResource(
-                if (available) R.string.intros else R.string.not_available,
+                if (available) R.string.auto_skip_intros else R.string.not_available,
             ),
             checked = appEnabled,
             enabled = available,
             onCheckedChange = onAppEnabledChange,
         )
-        Spacer(Modifier.height(10.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
-        )
-        Spacer(Modifier.height(10.dp))
-        Box(modifier = Modifier.alpha(if (available && appEnabled) 1f else 0.42f)) {
-            TvToggleRow(
-                title = stringResource(R.string.skip_intros),
-                description = null,
-                checked = skipIntros,
-                enabled = available && appEnabled,
-                onCheckedChange = onSkipIntrosChange,
-            )
-        }
     }
 }
 
@@ -336,6 +311,7 @@ private fun TvToggleRow(
     Surface(
         onClick = { onCheckedChange(!checked) },
         enabled = enabled,
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         modifier = Modifier
             .fillMaxWidth()
             .animateContentSize(),
@@ -358,7 +334,7 @@ private fun TvToggleRow(
                     Spacer(Modifier.height(3.dp))
                     Text(
                         text = description,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current.copy(alpha = 0.72f),
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                     )
