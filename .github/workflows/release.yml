@@ -1,0 +1,86 @@
+name: Publish release APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      INTRO_LEAP_KEYSTORE_FILE: ${{ github.workspace }}/ci/introleap-ci.jks
+      INTRO_LEAP_STORE_PASSWORD: introleap-ci-build-key
+      INTRO_LEAP_KEY_ALIAS: introleap-ci
+      INTRO_LEAP_KEY_PASSWORD: introleap-ci-build-key
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Determine release tag
+        id: version
+        shell: bash
+        run: |
+          VERSION_NAME=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts)
+          test -n "$VERSION_NAME"
+          echo "tag=v${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether the release already exists
+        id: release_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up JDK 17
+        if: steps.release_check.outputs.exists == 'false'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Gradle
+        if: steps.release_check.outputs.exists == 'false'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        if: steps.release_check.outputs.exists == 'false'
+        run: chmod +x gradlew
+
+      - name: Build signed release APK
+        if: steps.release_check.outputs.exists == 'false'
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      - name: Prepare release files
+        if: steps.release_check.outputs.exists == 'false'
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "IntroLeap-${RELEASE_TAG}.apk"
+          sha256sum "IntroLeap-${RELEASE_TAG}.apk" > "IntroLeap-${RELEASE_TAG}.apk.sha256"
+
+      - name: Publish GitHub release
+        if: steps.release_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            "IntroLeap-${RELEASE_TAG}.apk" \
+            "IntroLeap-${RELEASE_TAG}.apk.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "IntroLeap ${RELEASE_TAG#v}" \
+            --generate-notes

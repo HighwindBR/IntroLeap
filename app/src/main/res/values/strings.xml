@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">IntroLeap</string>
+    <string name="service_description">Automatically activates supported skip controls in selected streaming apps.</string>
+    <string name="eyebrow">AUTOMATIC SKIPPING</string>
+    <string name="subtitle">Choose what to skip in each streaming service</string>
+    <string name="accessibility_service_title">Accessibility service</string>
+    <string name="service_enabled">Enabled — ready to skip</string>
+    <string name="service_disabled">Disabled — enable it once to get started</string>
+    <string name="open_accessibility_settings">Open accessibility settings</string>
+    <string name="apps_and_skip_types">Apps and skip types</string>
+    <string name="intros">Intros</string>
+    <string name="enabled">Enabled</string>
+    <string name="not_available">Not installed or disabled</string>
+    <string name="skip_intros">Skip intros</string>
+    <string name="confirmations">Confirmations</string>
+    <string name="show_skip_confirmation">Show a message after each skip</string>
+    <string name="skip_confirmation_description">Shows a brief confirmation, such as “Intro skipped”.</string>
+    <string name="toast_intro_skipped">Intro skipped</string>
+    <string name="privacy_title">Privacy by design</string>
+    <string name="privacy_body">No internet access, ads, analytics, or screen capture. IntroLeap reacts only to accessible controls from the selected service.</string>
+</resources>

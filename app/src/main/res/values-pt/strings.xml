@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">IntroLeap</string>
+    <string name="service_description">Aciona automaticamente controles de pulo compatíveis nos aplicativos de streaming selecionados.</string>
+    <string name="eyebrow">PULO AUTOMÁTICO</string>
+    <string name="subtitle">Escolha o que pular em cada serviço de streaming</string>
+    <string name="accessibility_service_title">Serviço de acessibilidade</string>
+    <string name="service_enabled">Ativado — pronto para pular</string>
+    <string name="service_disabled">Desativado — ative uma vez para começar</string>
+    <string name="open_accessibility_settings">Abrir configurações de acessibilidade</string>
+    <string name="apps_and_skip_types">Aplicativos e tipos de pulo</string>
+    <string name="intros">Aberturas</string>
+    <string name="enabled">Ativado</string>
+    <string name="not_available">Não instalado ou desativado</string>
+    <string name="skip_intros">Pular aberturas</string>
+    <string name="confirmations">Confirmações</string>
+    <string name="show_skip_confirmation">Exibir aviso após cada pulo</string>
+    <string name="skip_confirmation_description">Mostra uma confirmação breve, como “Abertura pulada”.</string>
+    <string name="toast_intro_skipped">Abertura pulada</string>
+    <string name="privacy_title">Privacidade por princípio</string>
+    <string name="privacy_body">Sem acesso à internet, anúncios, análises ou capturas de tela. O IntroLeap reage somente aos controles acessíveis do serviço selecionado.</string>
+</resources>
