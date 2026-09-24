@@ -25,10 +25,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     signingConfigs {
         create("release") {
             val keystorePath = System.getenv("INTRO_LEAP_KEYSTORE_FILE")
@@ -51,6 +47,12 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
